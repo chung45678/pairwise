@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+
+/*
+  Pairwise visual language: event name tags and a highlighter.
+  Cobalt is the name-tag band. Yellow marker = "this is why you match"
+  (complementary evidence). Mint marker = something you both share.
+  Everything else stays quiet so the tags and the marks carry the page.
+*/
+@theme {
+  --color-paper: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-ink: #161b2e;
+  --color-muted: #5a6278;
+  --color-line: #d9dee8;
+  --color-tag: #2442c9;
+  --color-tag-dark: #1a3299;
+  --color-marker: #ffe14d;
+  --color-mint: #b6f2d3;
+  --color-danger: #c42b3a;
+  --color-ok: #127a4a;
+
+  --font-display: "Bricolage Grotesque Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+
+  --radius-tag: 14px;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-weight: 700;
+  font-variation-settings: "opsz" 96;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-tag);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* The highlighter stroke: slightly uneven, like a real marker. */
+mark.marker,
+mark.mint {
+  color: inherit;
+  padding: 0 0.15em;
+  margin: 0 -0.05em;
+  border-radius: 0.2em 0.35em 0.25em 0.4em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+mark.marker {
+  background: linear-gradient(100deg, #ffe14dcc 0%, var(--color-marker) 12%, #ffe14de6 88%, #ffe14d99 100%);
+}
+mark.mint {
+  background: linear-gradient(100deg, #b6f2d3cc 0%, var(--color-mint) 12%, #b6f2d3e6 88%, #b6f2d399 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The one orchestrated moment: the marker sweeps across the hero's evidence words. */
+  .sweep mark.marker,
+  .sweep mark.mint {
+    background-size: 0% 100%;
+    background-repeat: no-repeat;
+    animation: sweep 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+  .sweep mark:nth-of-type(2) { animation-delay: 350ms; }
+  .sweep mark:nth-of-type(3) { animation-delay: 700ms; }
+  @keyframes sweep {
+    to { background-size: 100% 100%; }
+  }
+}
+
+@media (forced-colors: active) {
+  mark.marker,
+  mark.mint {
+    background: Mark;
+    color: MarkText;
+  }
+}
