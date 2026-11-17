@@ -1,0 +1,8 @@
+api_id,name,first_name,last_name,email,phone_number,created_at,approval_status,checked_in_at,custom_source,qr_code_url,amount,amount_tax,currency,coupon_code,ticket_name,ticket_type_id,What program are you in?,Which club or team are you part of?,What are your interests? (comma separated),What are you looking for at this event?,What could you help others with?
+gst-1,Maya Chen,Maya,Chen,maya@uwaterloo.ca,,2026-11-01T10:00:00Z,approved,,,,0,0,CAD,,General,t1,Management Engineering,UW PM,"fintech, user research",design feedback on my product mockups,"roadmapping, user interviews"
+gst-2,Jordan Lee,Jordan,Lee,JORDAN@uwaterloo.ca,,2026-11-01T11:00:00Z,approved,,,,0,0,CAD,,General,t1,Global Business and Digital Arts,Blueprint,"figma; user research",a PM to learn roadmapping from,"design feedback, figma, portfolio reviews"
+gst-3,,Sam,Patel,sam@uwaterloo.ca,,2026-11-01T12:00:00Z,approved,,,,0,0,CAD,,General,t1,Computer Science,Blueprint,machine learning,cofounder for a fintech idea,"python, backend"
+gst-4,Declined Person,Declined,Person,declined@uwaterloo.ca,,2026-11-01T12:30:00Z,declined,,,,0,0,CAD,,General,t1,,,,,
+gst-5,No Email,No,Email,,,2026-11-01T12:40:00Z,approved,,,,0,0,CAD,,General,t1,,,,,
+gst-6,Maya Duplicate,Maya,Chen,maya@uwaterloo.ca,,2026-11-01T12:50:00Z,approved,,,,0,0,CAD,,General,t1,,,,,
+gst-7,Quiet Guest,Quiet,Guest,quiet@uwaterloo.ca,,2026-11-01T13:00:00Z,approved,,,,0,0,CAD,,General,t1,Math,,,,
