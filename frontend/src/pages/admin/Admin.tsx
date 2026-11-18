@@ -155,6 +155,16 @@ export function Admin() {
 
   return (
     <PageShell wide right={<StatusPill status={event.status} />}>
+      {slug === "demo" && (
+        <div className="mb-10">
+          <Notice>
+            <p className="font-medium">You're looking at a read-only demo.</p>
+            <p className="mt-1 text-muted">
+              The 40 guests and their feedback are simulated. <a href="/" className="text-link underline decoration-link/30 underline-offset-4 hover:decoration-link">Create your own event</a> to try importing, matching and sending.
+            </p>
+          </Notice>
+        </div>
+      )}
       {justCreated && (
         <div className="mb-10">
           <Notice>

@@ -5,10 +5,10 @@ from __future__ import annotations
 import re
 import secrets
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
-from pairwise.api.deps import get_event, get_session
+from pairwise.api.deps import DEMO_READ_ONLY, get_event, get_session, is_demo
 from pairwise.api.serializers import event_public
 from pairwise.models import Attendee, Event
 from pairwise.schemas import EventCreate, EventCreated, EventPublic, IntakeIn, IntakeOut
@@ -30,6 +30,25 @@ def create_event(body: EventCreate, session: Session = Depends(get_session)):
     return EventCreated(**event_public(event).model_dump(), admin_key=event.admin_key)
 
 
+@router.get("/demo")
+def demo_links(request: Request, session: Session = Depends(get_session)):
+    """Where the public read-only demo lives, so the landing page can link to it."""
+    settings = request.app.state.settings
+    if not settings.demo_enabled:
+        return {"enabled": False}
+    event = session.exec(select(Event).where(Event.slug == settings.demo_slug)).first()
+    if not event:
+        return {"enabled": False}
+    guest = session.exec(
+        select(Attendee).where(Attendee.event_id == event.id).order_by(Attendee.id)
+    ).first()
+    return {
+        "enabled": True,
+        "admin": f"/e/{event.slug}/admin#key={event.admin_key}",
+        "guest": f"/m/{guest.token}" if guest else None,
+    }
+
+
 @router.get("/events/{slug}", response_model=EventPublic)
 def read_event(event: Event = Depends(get_event)):
     return event_public(event)
@@ -37,10 +56,15 @@ def read_event(event: Event = Depends(get_event)):
 
 @router.post("/events/{slug}/intake", response_model=IntakeOut)
 def submit_intake(
-    body: IntakeIn, event: Event = Depends(get_event), session: Session = Depends(get_session)
+    request: Request,
+    body: IntakeIn,
+    event: Event = Depends(get_event),
+    session: Session = Depends(get_session),
 ):
     """Create or update an attendee. Matched by email so a Luma import and an intake
     submission from the same person merge into one row."""
+    if is_demo(request, event):
+        raise HTTPException(403, DEMO_READ_ONLY)
     existing = session.exec(
         select(Attendee).where(Attendee.event_id == event.id, Attendee.email == body.email)
     ).first()

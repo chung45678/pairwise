@@ -156,7 +156,14 @@ async function request<T>(path: string, init: RequestInit = {}, adminKey?: strin
 
 const json = (body: unknown) => JSON.stringify(body);
 
+export interface DemoLinks {
+  enabled: boolean;
+  admin?: string;
+  guest?: string | null;
+}
+
 export const api = {
+  demo: () => request<DemoLinks>("/api/demo"),
   createEvent: (body: Partial<EventPublic> & { name: string }) =>
     request<EventCreated>("/api/events", { method: "POST", body: json(body) }),
   event: (slug: string) => request<EventPublic>(`/api/events/${slug}`),

@@ -7,13 +7,16 @@ are directly comparable with a dot product.
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
 import httpx
 import numpy as np
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
+
+from pairwise.matching.stopwords import ENGLISH_STOP_WORDS
 
 # Words people use to *frame* a request rather than say what it's about. Left in,
 # "learning SQL" and "machine learning" would match on "learning".
@@ -97,6 +100,49 @@ def _l2_normalize(m: np.ndarray) -> np.ndarray:
     return m / norms
 
 
+class TfidfVectorizer:
+    """Minimal TF-IDF, numerically identical to scikit-learn's
+    `TfidfVectorizer(analyzer=..., sublinear_tf=True)` with default smoothing and
+    L2 norm (tests/test_tfidf.py checks this). Kept in-house so the deployed API
+    doesn't carry scikit-learn and SciPy: about 150 MB lighter and a much faster
+    cold start.
+
+        tf  = 1 + ln(count)
+        idf = ln((1 + n_docs) / (1 + doc_freq)) + 1
+        row = tf * idf, then L2-normalized
+    """
+
+    def __init__(self, analyzer) -> None:
+        self.analyzer = analyzer
+        self.vocabulary_: dict[str, int] = {}
+        self.idf_ = np.zeros(0)
+
+    def fit(self, docs: Sequence[str]) -> TfidfVectorizer:
+        counts = [Counter(self.analyzer(d)) for d in docs]
+        df: Counter[str] = Counter()
+        for c in counts:
+            df.update(c.keys())
+        if not df:
+            raise ValueError("empty vocabulary")
+        terms = sorted(df)
+        self.vocabulary_ = {t: i for i, t in enumerate(terms)}
+        n = len(docs)
+        self.idf_ = np.array([math.log((1 + n) / (1 + df[t])) + 1 for t in terms])
+        return self
+
+    def get_feature_names_out(self) -> np.ndarray:
+        return np.array(sorted(self.vocabulary_, key=self.vocabulary_.get), dtype=object)
+
+    def transform(self, docs: Sequence[str]) -> np.ndarray:
+        out = np.zeros((len(docs), len(self.vocabulary_)))
+        for row, doc in enumerate(docs):
+            for term, count in Counter(self.analyzer(doc)).items():
+                col = self.vocabulary_.get(term)
+                if col is not None:
+                    out[row, col] = (1 + math.log(count)) * self.idf_[col]
+        return _l2_normalize(out)
+
+
 class TfidfEncoder:
     """Default encoder: free, offline, deterministic, and explainable.
 
@@ -105,7 +151,7 @@ class TfidfEncoder:
     """
 
     def __init__(self) -> None:
-        self._vec = TfidfVectorizer(analyzer=phrase_ngrams, sublinear_tf=True, min_df=1)
+        self._vec = TfidfVectorizer(analyzer=phrase_ngrams)
         self._fitted = False
         self._empty = False
 
@@ -132,8 +178,8 @@ class TfidfEncoder:
             raise RuntimeError("call fit() before transform()")
         if self._empty:
             return np.zeros((len(docs), 1))
-        # TfidfVectorizer already L2-normalizes rows; empty docs come out as zeros.
-        return self._vec.transform([d or "" for d in docs]).toarray()
+        # Rows are L2-normalized; empty docs come out as zeros.
+        return self._vec.transform([d or "" for d in docs])
 
 
 class EmbeddingsEncoder:

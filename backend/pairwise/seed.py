@@ -21,8 +21,16 @@ from pairwise.models import Attendee, Event, EventStatus, Feedback, Match, Outco
 from pairwise.synthetic import generate, true_value
 
 
-def seed(n: int, base_url: str, with_feedback: bool = True) -> dict:
-    engine = make_engine(get_settings().database_url)
+def seed(
+    n: int,
+    base_url: str,
+    with_feedback: bool = True,
+    engine=None,
+    slug: str | None = None,
+    admin_key: str | None = None,
+) -> dict:
+    if engine is None:
+        engine = make_engine(get_settings().database_url)
     init_db(engine)
     rng = random.Random(7)
     people = generate(n, seed=42)
@@ -31,7 +39,7 @@ def seed(n: int, base_url: str, with_feedback: bool = True) -> dict:
         event = Event(
             # Random suffix: the seeded rng would give the same slug every run,
             # so running `make seed` twice used to crash on the unique slug.
-            slug=f"demo-mixer-{secrets.token_hex(3)}",
+            slug=slug or f"demo-mixer-{secrets.token_hex(3)}",
             name="PM x Blueprint Winter Mixer",
             description="Meet the people building things at Waterloo. Pairwise will "
             "suggest two people worth meeting.",
@@ -39,6 +47,8 @@ def seed(n: int, base_url: str, with_feedback: bool = True) -> dict:
             location="E7 4th floor",
             matches_per_person=2,
         )
+        if admin_key:
+            event.admin_key = admin_key
         s.add(event)
         s.commit()
         s.refresh(event)

@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api";
+import { api, type DemoLinks } from "../api";
 import { Marked } from "../components/Marked";
 import { NameTag } from "../components/NameTag";
 import { Brand, Button, Field, Input, Notice } from "../components/ui";
@@ -144,17 +144,33 @@ function Steps() {
   );
 }
 
+function useDemo() {
+  const [demo, setDemo] = useState<DemoLinks | null>(null);
+  useEffect(() => {
+    api.demo().then(setDemo).catch(() => setDemo(null));
+  }, []);
+  return demo?.enabled ? demo : null;
+}
+
 export function Landing() {
   const form = useInView<HTMLDivElement>();
+  const demo = useDemo();
   return (
     <div className="min-h-dvh">
       <header className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
         <Brand />
-        {REPO_URL && (
-          <a href={REPO_URL} className="text-[14px] text-muted transition-colors duration-[var(--dur-instant)] hover:text-ink">
-            Source on GitHub
-          </a>
-        )}
+        <nav className="flex items-center gap-5 text-[14px]">
+          {demo?.admin && (
+            <a href={demo.admin} className="enter text-ink transition-colors duration-[var(--dur-instant)] hover:text-ink/75">
+              Live demo
+            </a>
+          )}
+          {REPO_URL && (
+            <a href={REPO_URL} className="text-muted transition-colors duration-[var(--dur-instant)] hover:text-ink">
+              Source on GitHub
+            </a>
+          )}
+        </nav>
       </header>
 
       <main className="mx-auto max-w-6xl px-5">

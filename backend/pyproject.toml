@@ -4,19 +4,19 @@ version = "1.0.0"
 description = "Open-source event matchmaking for student clubs"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi>=0.115",
+  "fastapi>=0.160",
   "uvicorn[standard]>=0.30",
   "sqlmodel>=0.0.22",
   "python-multipart>=0.0.9",
   "numpy>=1.26",
-  "scikit-learn>=1.5",
   "networkx>=3.3",
   "httpx>=0.27",
+  "psycopg[binary]>=3.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "matplotlib>=3.9"]
-postgres = ["psycopg[binary]>=3.2"]
+# scikit-learn is dev-only: tests check our TF-IDF matches it exactly.
+dev = ["pytest>=8", "ruff>=0.6", "matplotlib>=3.9", "scikit-learn>=1.5"]
 
 [build-system]
 requires = ["setuptools>=69"]

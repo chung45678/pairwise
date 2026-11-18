@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, col, or_, select
 
-from pairwise.api.deps import get_attendee_by_token, get_session
+from pairwise.api.deps import DEMO_READ_ONLY, get_attendee_by_token, get_session, is_demo
 from pairwise.api.serializers import event_public, my_match
 from pairwise.models import Attendee, Event, EventStatus, Feedback, Match
 from pairwise.schemas import FeedbackIn, MeOut, MyFeedback
@@ -50,6 +50,7 @@ def read_me(me: Attendee = Depends(get_attendee_by_token), session: Session = De
 
 @router.post("/feedback", response_model=MyFeedback)
 def give_feedback(
+    request: Request,
     body: FeedbackIn,
     me: Attendee = Depends(get_attendee_by_token),
     session: Session = Depends(get_session),
@@ -58,6 +59,8 @@ def give_feedback(
     if not match or me.id not in (match.a_id, match.b_id):
         raise HTTPException(404, "Match not found")
     event = session.get(Event, me.event_id)
+    if is_demo(request, event):
+        raise HTTPException(403, DEMO_READ_ONLY)
     if event.status != EventStatus.published:
         raise HTTPException(409, "Matches aren't published yet")
 
