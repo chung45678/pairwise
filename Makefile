@@ -2,9 +2,16 @@
 
 VENV := .venv
 PY := $(VENV)/bin/python
+# Override if your default python3 is too old: make setup PYTHON=python3.12
+PYTHON ?= python3
 
 setup:            ## Install everything
-	python3 -m venv $(VENV)
+	@$(PYTHON) -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || \
+	  { echo "Pairwise needs Python 3.11+, but $(PYTHON) is $$($(PYTHON) --version 2>&1)."; \
+	    echo "Install it (Mac: brew install python@3.12), then run: make setup PYTHON=python3.12"; exit 1; }
+	@command -v npm >/dev/null || { echo "Node.js 20+ is required (Mac: brew install node)."; exit 1; }
+	rm -rf $(VENV)
+	$(PYTHON) -m venv $(VENV)
 	$(PY) -m pip install -e "backend[dev]"
 	cd frontend && npm install
 

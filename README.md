@@ -110,10 +110,10 @@ pairwise/
 
 ## Run it
 
-**Requirements:** Python 3.11+, Node 20+
+**Requirements:** Python 3.11+, Node 20+. macOS ships Python 3.9, so install a newer one first: `brew install python@3.12 node`
 
 ```bash
-make setup     # venv + pip install + npm install
+make setup     # venv + pip install + npm install (needs Python 3.11+; older default? make setup PYTHON=python3.12)
 make seed      # demo event with 40 guests; prints organizer + attendee links
 make dev       # API on :8000, app on http://localhost:5173
 ```
