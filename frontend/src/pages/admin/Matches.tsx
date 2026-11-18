@@ -1,31 +1,50 @@
 import { Download, RefreshCw, Send } from "lucide-react";
 import { useState } from "react";
 import { api, type EventPublic, type MatchRow, type MatchStats } from "../../api";
-import { Marked } from "../../components/Marked";
+import { countMarks, Marked } from "../../components/Marked";
 import { Button, Notice } from "../../components/ui";
 import { pct } from "../../lib/highlight";
+import { useMounted, vars } from "../../lib/motion";
 
-function Pair({ m }: { m: MatchRow }) {
+/** One pair. Rows deal in (first 8 staggered) and each row's highlights sweep as it lands. */
+function Pair({ m, index }: { m: MatchRow; index: number }) {
   const talked = m.feedback.filter((f) => f.outcome === "talked").length;
+  const slot = Math.min(index, 8);
+  const swept = useMounted(40);
+  let n = 0;
+  const offsets = m.reasons.map((r) => {
+    const at = n;
+    if (r.type !== "roles") n += countMarks(r.text, r.terms);
+    return at;
+  });
   return (
-    <li className="grid gap-3 border-b border-line px-5 py-4 last:border-0 md:grid-cols-[minmax(220px,0.8fr)_1.6fr]">
+    <li
+      className="enter grid grid-cols-[minmax(0,1fr)] gap-3 px-5 py-4 shadow-[0_1px_0_var(--color-line)] last:shadow-none md:grid-cols-[minmax(200px,0.8fr)_minmax(0,1.6fr)]"
+      style={vars({ "--i": slot, "--rise": "var(--rise-sm)" })}
+    >
       <div>
-        <p className="font-display text-[19px] font-bold leading-tight">
-          {m.a.name} <span className="font-sans text-[15px] font-normal text-muted">and</span> {m.b.name}
+        <p className="text-[16px] font-medium leading-tight">
+          {m.a.name} <span className="font-normal text-muted">and</span> {m.b.name}
         </p>
-        <p className="mt-0.5 text-sm text-muted">
+        <p className="mt-1 text-[13px] text-muted">
           {[m.a.role, m.b.role].filter(Boolean).join(" with ") || "Roles not given"}
         </p>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-[13px] text-muted">
           {m.round === 1 ? "Best match" : `Match ${m.round}`} with score {m.score.toFixed(2)}
           {m.feedback.length > 0 && `. ${talked} of ${m.feedback.length} said they talked`}
         </p>
       </div>
       <div className="text-[15px]">
-        <ul className="flex flex-col gap-1">
+        <ul
+          className="sweepable flex flex-col gap-1"
+          style={vars({ "--sweep-delay": `${slot * 60 + 260}ms` })}
+          {...(swept ? { "data-in": "" } : {})}
+        >
           {m.reasons.length ? (
             m.reasons.map((r, i) => (
-              <li key={i}>{r.type === "roles" ? r.text : <Marked text={r.text} terms={r.terms} tone={r.type === "shared" ? "mint" : "marker"} />}</li>
+              <li key={i}>
+                {r.type === "roles" ? r.text : <Marked text={r.text} terms={r.terms} tone={r.type === "shared" ? "mint" : "marker"} offset={offsets[i]} />}
+              </li>
             ))
           ) : (
             <li className="text-muted">No strong overlap. This pair fills a gap so nobody is left out.</li>
@@ -97,15 +116,15 @@ export function Matches({
 
   if (matches.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-surface px-6 py-14 text-center">
-        <h2 className="text-[24px]">No matches yet</h2>
+      <div className="rounded-[var(--radius-card)] bg-surface px-6 py-14 text-center shadow-[var(--shadow-card)]">
+        <h2 className="text-[22px]">No matches yet</h2>
         <p className="mx-auto mt-2 max-w-[52ch] text-[15px] text-muted">
           {readyCount < 2
             ? "You need at least two guests who've answered the intake questions."
             : `${readyCount} guests are ready. Matching takes a few seconds, and nobody sees anything until you send.`}
         </p>
         {error && <div className="mx-auto mt-4 max-w-md"><Notice tone="error">{error}</Notice></div>}
-        <Button className="mt-6" onClick={generate} busy={busy === "generate"} disabled={readyCount < 2}>
+        <Button className="mt-6" onClick={generate} busy={busy === "generate"} disabled={readyCount < 2} arrow>
           Generate matches
         </Button>
       </div>
@@ -116,8 +135,8 @@ export function Matches({
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-[22px]">{published ? "Matches sent" : "Review before you send"}</h2>
-          <p className="mt-1 text-[15px] text-muted">
+          <h2 className="text-[19px]">{published ? "Matches sent" : "Review before you send"}</h2>
+          <p className="mt-1 max-w-[72ch] text-[14px] text-muted">
             {matches.length} pairs covering {people} guests
             {stats && `, ${pct(stats.coverage)} of everyone ready`}.{" "}
             {!published && "Highlighted words show why each pair matched. Read a few. If something looks off, fix the guest's answers and regenerate."}
@@ -141,7 +160,7 @@ export function Matches({
       </div>
 
       {confirming && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-tag/30 bg-tag/5 px-5 py-4">
+        <div className="enter mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-surface px-5 py-4 shadow-[0_0_0_1px_var(--color-link),0_12px_32px_-16px_rgb(0_0_0/0.8)]" style={vars({ "--rise": "var(--rise-sm)" })}>
           <p className="max-w-[60ch] text-[15px]">
             Guests will see their matches on their private page. After sending you can't regenerate, so new sign-ups won't get matched.
           </p>
@@ -161,8 +180,8 @@ export function Matches({
       )}
       {error && <div className="mt-4"><Notice tone="error">{error}</Notice></div>}
 
-      <ul className="mt-6 rounded-xl border border-line bg-surface">
-        {matches.map((m) => <Pair key={m.id} m={m} />)}
+      <ul className="mt-6 rounded-[var(--radius-card)] bg-surface shadow-[var(--shadow-card)]">
+        {matches.map((m, i) => <Pair key={m.id} m={m} index={i} />)}
       </ul>
     </div>
   );

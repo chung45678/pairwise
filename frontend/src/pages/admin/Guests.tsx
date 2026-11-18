@@ -1,7 +1,8 @@
-import { Check, Link2, Trash2, Upload } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { api, type Attendee, type EventPublic, type ImportResult } from "../../api";
-import { Button, Notice } from "../../components/ui";
+import { Button, CopyButton, Notice } from "../../components/ui";
+import { vars } from "../../lib/motion";
 
 const FIELD_LABELS: Record<string, string> = {
   name: "Name",
@@ -18,18 +19,18 @@ const FIELD_LABELS: Record<string, string> = {
 
 function ImportSummary({ r }: { r: ImportResult }) {
   return (
-    <div className="mt-4 rounded-lg border border-line bg-surface p-4 text-[15px]">
-      <p className="font-semibold">
+    <div className="focus-in mt-4 rounded-[var(--radius-card)] bg-surface p-4 text-[15px] shadow-[var(--shadow-card)]">
+      <p className="font-medium">
         Added {r.added} {r.added === 1 ? "guest" : "guests"}
         {r.updated > 0 && `, updated ${r.updated}`}
         {r.skipped.length > 0 && `, skipped ${r.skipped.length}`}.
       </p>
       <details className="mt-2">
-        <summary className="cursor-pointer text-tag">Columns we read</summary>
+        <summary className="cursor-pointer text-link">Columns we read</summary>
         <table className="mt-2 w-full text-left text-sm">
           <tbody>
             {Object.entries(r.mapping).map(([field, header]) => (
-              <tr key={field} className="border-t border-line">
+              <tr key={field} className="shadow-[0_-1px_0_var(--color-line)]">
                 <td className="py-1.5 pr-4 text-muted">{FIELD_LABELS[field] ?? field}</td>
                 <td className="py-1.5">{header}</td>
               </tr>
@@ -44,7 +45,7 @@ function ImportSummary({ r }: { r: ImportResult }) {
       </details>
       {r.skipped.length > 0 && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-tag">Skipped rows</summary>
+          <summary className="cursor-pointer text-link">Skipped rows</summary>
           <ul className="mt-2 text-sm text-muted">
             {r.skipped.map((s) => (
               <li key={s.row}>Row {s.row}: {s.reason}</li>
@@ -57,25 +58,13 @@ function ImportSummary({ r }: { r: ImportResult }) {
 }
 
 function CopyGuestLink({ token }: { token: string }) {
-  const [done, setDone] = useState(false);
   return (
-    <button
-      type="button"
+    <CopyButton
+      iconOnly
+      value={`${window.location.origin}/m/${token}`}
       title="Copy this guest's private link"
-      aria-label="Copy guest link"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(`${window.location.origin}/m/${token}`);
-          setDone(true);
-          setTimeout(() => setDone(false), 1500);
-        } catch {
-          /* ignore */
-        }
-      }}
-      className="rounded-md p-1.5 text-muted hover:bg-tag/8 hover:text-tag"
-    >
-      {done ? <Check aria-hidden className="size-4" /> : <Link2 aria-hidden className="size-4" />}
-    </button>
+      ariaLabel="Copy guest link"
+    />
   );
 }
 
@@ -95,16 +84,23 @@ export function Guests({
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  // Rows added by the last import get a staggered entrance; everything else stays put.
+  const [fresh, setFresh] = useState<Set<number>>(new Set());
   const locked = event.status === "published";
   const ready = attendees.filter((a) => a.intake_complete).length;
+  // `fresh` holds the ids that existed *before* the import (plus a -1 marker).
+  const isNew = (id: number) => fresh.has(-1) && !fresh.has(id);
+  let newIndex = 0;
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
     setBusy(true);
     setError("");
     try {
+      const before = new Set(attendees.map((a) => a.id));
       setResult(await api.admin.importCsv(event.slug, adminKey, file));
       await reload();
+      setFresh(new Set([-1, ...before])); // resolved against the new list below
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed");
     } finally {
@@ -124,10 +120,10 @@ export function Guests({
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[300px_minmax(0,1fr)]">
       <aside>
-        <h2 className="text-[22px]">Import from Luma</h2>
-        <p className="mt-1 text-[15px] text-muted">
+        <h2 className="text-[19px]">Import from Luma</h2>
+        <p className="mt-1 text-[14px] text-muted">
           In Luma, open your event, go to Guests, and choose Download as CSV. Registration questions about interests or
           goals are picked up automatically.
         </p>
@@ -142,11 +138,11 @@ export function Guests({
             setDragging(false);
             upload(e.dataTransfer.files[0]);
           }}
-          className={`mt-4 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors has-focus-visible:outline-3 has-focus-visible:outline-tag ${dragging ? "border-tag bg-tag/5" : "border-line bg-surface hover:border-tag/60"}`}
+          className={`mt-5 flex cursor-pointer flex-col items-center gap-2 rounded-[var(--radius-card)] bg-surface px-4 py-8 text-center transition-[transform,box-shadow,background-color] duration-[var(--dur-quick)] ease-[var(--ease-out)] has-focus-visible:outline-3 has-focus-visible:outline-link ${dragging ? "-translate-y-0.5 bg-link/8 shadow-[0_0_0_1.5px_var(--color-link)]" : "shadow-[0_0_0_1px_var(--color-line)] hover:shadow-[0_0_0_1px_var(--color-field)]"}`}
         >
-          <Upload aria-hidden className="size-6 text-tag" />
-          <span className="font-semibold">{busy ? "Importing" : "Drop the CSV here or browse"}</span>
-          <span className="text-sm text-muted">Up to 2 MB</span>
+          <Upload aria-hidden className={`size-5 text-link ${busy ? "animate-pulse" : ""}`} />
+          <span className="font-medium">{busy ? "Importing" : "Drop the CSV here or browse"}</span>
+          <span className="text-[13px] text-muted">Up to 2 MB</span>
           <input ref={fileRef} type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
         </label>
         {error && <div className="mt-4"><Notice tone="error">{error}</Notice></div>}
@@ -155,44 +151,48 @@ export function Guests({
 
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-[22px]">Guests</h2>
-          <p className="text-[15px] text-muted">
+          <h2 className="text-[19px]">Guests</h2>
+          <p className="text-[14px] text-muted">
             {ready} of {attendees.length} ready to match
           </p>
         </div>
         {attendees.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-line bg-surface px-6 py-12 text-center">
-            <p className="font-semibold">No guests yet</p>
-            <p className="mt-1 text-[15px] text-muted">Import your Luma list, or share the intake link above.</p>
+          <div className="mt-4 rounded-[var(--radius-card)] bg-surface px-6 py-12 text-center shadow-[var(--shadow-card)]">
+            <p className="font-medium">No guests yet</p>
+            <p className="mt-1 text-[14px] text-muted">Import your Luma list, or share the intake link above.</p>
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface">
-            <table className="w-full min-w-[640px] text-left text-[15px]">
-              <thead className="border-b border-line text-sm text-muted">
+          <div className="mt-4 overflow-x-auto rounded-[var(--radius-card)] bg-surface shadow-[var(--shadow-card)]">
+            <table className="w-full text-left text-[14px] md:min-w-[640px]">
+              <thead className="text-[13px] text-muted shadow-[0_1px_0_var(--color-line)]">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Name</th>
-                  <th className="px-4 py-2.5 font-medium">Role</th>
-                  <th className="px-4 py-2.5 font-medium">Interests</th>
+                  <th className="hidden px-4 py-2.5 font-medium md:table-cell">Role</th>
+                  <th className="hidden px-4 py-2.5 font-medium md:table-cell">Interests</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
                   <th className="px-2 py-2.5"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
                 {attendees.map((a) => (
-                  <tr key={a.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-2.5">
-                      <div className="font-semibold">{a.name}</div>
-                      <div className="text-sm text-muted">{a.email}</div>
+                  <tr
+                    key={a.id}
+                    className={`shadow-[0_1px_0_var(--color-line)] last:shadow-none ${isNew(a.id) ? "enter" : ""}`}
+                    style={isNew(a.id) ? vars({ "--i": newIndex++, "--delay": "200ms" }) : undefined}
+                  >
+                    <td className="max-w-0 px-4 py-2.5 md:max-w-none">
+                      <div className="truncate font-medium">{a.name}</div>
+                      <div className="truncate text-[13px] text-muted">{a.email}</div>
                     </td>
-                    <td className="px-4 py-2.5">{a.role || <span className="text-muted">Not given</span>}</td>
-                    <td className="max-w-64 truncate px-4 py-2.5" title={a.interests.join(", ")}>
+                    <td className="hidden px-4 py-2.5 md:table-cell">{a.role || <span className="text-muted">Not given</span>}</td>
+                    <td className="hidden max-w-64 truncate px-4 py-2.5 md:table-cell" title={a.interests.join(", ")}>
                       {a.interests.join(", ") || <span className="text-muted">None</span>}
                     </td>
                     <td className="px-4 py-2.5">
                       {a.intake_complete ? (
-                        <span className="rounded-full bg-mint px-2.5 py-0.5 text-sm font-semibold">Ready</span>
+                        <span className="rounded-full bg-mint px-2.5 py-0.5 text-[13px] font-medium text-[#14161b]">Ready</span>
                       ) : (
-                        <span className="rounded-full bg-line/70 px-2.5 py-0.5 text-sm" title="No interests or goals yet. Send them the intake link.">
+                        <span className="rounded-full bg-ink/8 px-2.5 py-0.5 text-[13px]" title="No interests or goals yet. Send them the intake link.">
                           Needs answers
                         </span>
                       )}

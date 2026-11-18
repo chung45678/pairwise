@@ -126,7 +126,13 @@ log("bad links handled");
 await page.setViewport({ width: 390, height: 844 });
 await g.setViewport({ width: 390, height: 844 });
 const overflow = await g.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-log("no horizontal overflow on mobile:", !overflow);
+log("no horizontal overflow on mobile (guest page):", !overflow);
+await page.bringToFront();
+await clickButton(page, "Guests (7)");
+await waitText(page, "Import from Luma");
+const adminOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+log("no horizontal overflow on mobile (guest list):", !adminOverflow);
+if (overflow || adminOverflow) process.exitCode = 1;
 
 await browser.close();
 const real = errors.filter((e) => !e.includes("404"));

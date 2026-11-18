@@ -1,9 +1,9 @@
-import { Check, Copy } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { api, ApiError, type Attendee, type EventPublic, type MatchRow } from "../../api";
-import { Button, Field, Input, Loading, Notice, PageShell, StatusPill } from "../../components/ui";
+import { Button, CopyButton, Field, Input, Loading, Notice, PageShell, StatusPill } from "../../components/ui";
 import { formatDate, readAdminKey } from "../../lib/highlight";
+import { stagger } from "../../lib/motion";
 import { Guests } from "./Guests";
 import { Matches } from "./Matches";
 import { Results } from "./Results";
@@ -11,27 +11,12 @@ import { Results } from "./Results";
 type Tab = "guests" | "matches" | "results";
 
 function CopyField({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  const [copied, setCopied] = useState(false);
   return (
     <Field label={label} hint={hint}>
       {(id, d) => (
         <div className="flex gap-2">
-          <Input id={id} aria-describedby={d} readOnly value={value} onFocus={(e) => e.target.select()} className="font-[450] text-muted" />
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(value);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              } catch {
-                /* ignore */
-              }
-            }}
-          >
-            {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
+          <Input id={id} aria-describedby={d} readOnly value={value} onFocus={(e) => e.target.select()} className="min-w-0 text-muted" />
+          <CopyButton value={value} />
         </div>
       )}
     </Field>
@@ -51,15 +36,60 @@ function EnterKey({ slug, onKey }: { slug: string; onKey: (k: string) => void })
   };
   return (
     <PageShell>
-      <h1 className="text-[36px]">Organizer access</h1>
-      <p className="mt-2 max-w-[56ch] text-muted">
+      <h1 className="enter text-[32px] sm:text-[40px]" style={stagger(0)}>Organizer access</h1>
+      <p className="enter mt-3 max-w-[56ch] text-muted" style={stagger(1)}>
         Open the dashboard link you saved when you created this event, or paste the admin key from it.
       </p>
-      <form onSubmit={submit} className="mt-6 flex max-w-md flex-col gap-4">
+      <form onSubmit={submit} className="enter mt-8 flex max-w-md flex-col gap-4" style={stagger(2)}>
         <Field label="Admin key">{(id) => <Input id={id} required value={value} onChange={(e) => setValue(e.target.value)} />}</Field>
-        <Button type="submit" className="self-start">Open dashboard</Button>
+        <Button type="submit" arrow className="self-start">Open dashboard</Button>
       </form>
     </PageShell>
+  );
+}
+
+/** Tabs with one underline that slides to the active tab (transform only). */
+function Tabs({ tabs, active, onChange }: { tabs: { id: Tab; label: string }[]; active: Tab; onChange: (t: Tab) => void }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [bar, setBar] = useState<{ x: number; w: number } | null>(null);
+  const labels = tabs.map((t) => t.label).join("|");
+
+  const measure = useCallback(() => {
+    const btn = listRef.current?.querySelector<HTMLButtonElement>(`[data-tab="${active}"]`);
+    if (btn) setBar({ x: btn.offsetLeft, w: btn.offsetWidth });
+  }, [active]);
+
+  useLayoutEffect(measure, [measure, labels]);
+  useEffect(() => {
+    window.addEventListener("resize", measure);
+    document.fonts?.ready.then(measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [measure]);
+
+  return (
+    <div ref={listRef} role="tablist" aria-label="Dashboard sections" className="relative mt-12 flex gap-1 shadow-[0_1px_0_var(--color-line)]">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          role="tab"
+          data-tab={t.id}
+          id={`tab-${t.id}`}
+          aria-selected={active === t.id}
+          aria-controls={`panel-${t.id}`}
+          onClick={() => onChange(t.id)}
+          className={`px-4 py-2.5 text-[15px] font-medium transition-colors duration-[var(--dur-instant)] ${active === t.id ? "text-ink" : "text-muted hover:text-ink"}`}
+        >
+          {t.label}
+        </button>
+      ))}
+      {bar && (
+        <span
+          aria-hidden
+          className="absolute bottom-0 left-0 h-[2px] w-px origin-left bg-ink transition-transform duration-[var(--dur-base)] ease-[var(--ease-drawer)]"
+          style={{ transform: `translateX(${bar.x}px) scaleX(${bar.w})` }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -73,13 +103,14 @@ export function Admin() {
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const tabParam = new URLSearchParams(location.search).get("tab") as Tab | null;
   const [tab, setTabState] = useState<Tab>(tabParam ?? "guests");
+  const [error, setError] = useState("");
+
   const setTab = (t: Tab) => {
     setTabState(t);
     const url = new URL(window.location.href);
     url.searchParams.set("tab", t);
     window.history.replaceState(window.history.state, "", url.pathname + url.search);
   };
-  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     if (!key) return;
@@ -103,6 +134,7 @@ export function Admin() {
     // Clear the key from the address bar once it's saved, so screenshots don't leak it.
     if (window.location.hash.includes("key="))
       window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   if (!key) return <EnterKey slug={slug} onKey={setKey} />;
@@ -120,10 +152,10 @@ export function Admin() {
   return (
     <PageShell wide right={<StatusPill status={event.status} />}>
       {justCreated && (
-        <div className="mb-8">
+        <div className="mb-10">
           <Notice>
-            <p className="font-semibold">Bookmark this dashboard.</p>
-            <p className="mt-1">There are no accounts, so this private link is how you get back in.</p>
+            <p className="font-medium">Bookmark this dashboard.</p>
+            <p className="mt-1 text-muted">There are no accounts, so this private link is how you get back in.</p>
             <div className="mt-3 max-w-xl">
               <CopyField label="Organizer link" value={`${origin}/e/${slug}/admin#key=${key}`} />
             </div>
@@ -131,31 +163,21 @@ export function Admin() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_minmax(320px,440px)] lg:items-end">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] lg:items-end">
         <div>
-          <p className="text-[15px] text-muted">{[formatDate(event.starts_at), event.location].filter(Boolean).join(", ") || "No date set"}</p>
-          <h1 className="mt-1 text-[36px] sm:text-[44px]">{event.name}</h1>
+          <p className="enter text-[14px] text-muted" style={stagger(0)}>
+            {[formatDate(event.starts_at), event.location].filter(Boolean).join(", ") || "No date set"}
+          </p>
+          <h1 className="enter mt-2 text-[32px] sm:text-[40px]" style={stagger(1)}>{event.name}</h1>
         </div>
-        <CopyField label="Intake link for guests" value={`${origin}/e/${slug}/join`} hint="Post it in your event chat or add it to the Luma confirmation email." />
+        <div className="enter" style={stagger(2)}>
+          <CopyField label="Intake link for guests" value={`${origin}/e/${slug}/join`} hint="Post it in your event chat or add it to the Luma confirmation email." />
+        </div>
       </div>
 
-      <div role="tablist" aria-label="Dashboard sections" className="mt-10 flex gap-1 border-b border-line">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => setTab(t.id)}
-            className={`-mb-px border-b-[3px] px-4 py-2.5 text-[15px] font-semibold ${tab === t.id ? "border-tag text-ink" : "border-transparent text-muted hover:text-ink"}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="pt-8">
+      <div key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="enter pt-10" style={{ ["--rise" as string]: "var(--rise-sm)" }}>
         {tab === "guests" && <Guests event={event} adminKey={key} attendees={attendees} reload={async () => void (await load())} />}
         {tab === "matches" && (
           <Matches
