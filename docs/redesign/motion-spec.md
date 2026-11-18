@@ -1,7 +1,6 @@
 # Pairwise redesign: reference study, spec and audit
 
-Status: **waiting for approval** (Phases 1 to 3). No UI code has changed yet.
-Branch: `redesign/motion`
+Status: **implemented** on branch `redesign/motion`. Approved with two changes from Chung: no logo, and a black theme. See [decisions.md](decisions.md) for the final mapping and any deviations, and [DESIGN.md §9](../DESIGN.md) for the system as built.
 
 ---
 

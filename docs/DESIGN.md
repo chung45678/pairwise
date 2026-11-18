@@ -169,3 +169,46 @@ Admin auth uses the `X-Admin-Key` header, compared with `hmac.compare_digest` so
 - **API:** full organizer and attendee flow through FastAPI's `TestClient` against an in-memory DB.
 - **Property-style:** solver invariants checked across random sizes and seeds, odd and even counts.
 - **Benchmark:** `python -m benchmarks.run` regenerates BENCHMARK.md and its chart.
+
+## 9. Visual + motion system
+
+Full rationale: [redesign/motion-spec.md](redesign/motion-spec.md) (reference study, spec, audit) and [redesign/decisions.md](redesign/decisions.md) (each decision mapped to what it came from).
+
+### Visual language
+- **Dark, quiet UI; name tags are the only paper.** Pages sit on pure black. Name tags keep a white body under a cobalt band, so they read as physical objects. Inside a tag, the `.on-paper` class swaps the color variables to the light palette.
+- **The highlighter is the signature.** Yellow means "this is why you match" (complementary evidence) and mint means "you both share this". Text on a mark is always dark ink.
+- **Type:** Bricolage Grotesque 500 for one display moment per screen (headline, tag names, the results number). Everything else is IBM Plex Sans at 400 and 500.
+- **Depth:** hairline rings plus soft shadows (`--shadow-card`, `--shadow-tag`) instead of borders. Inputs keep a 3:1 border because fields need a visible edge.
+- **No logo,** just the "Pairwise" wordmark.
+
+### Motion tokens (`frontend/src/index.css`)
+
+| Token | Value | Used for |
+|---|---|---|
+| `--dur-instant` | 80ms | color feedback |
+| `--dur-quick` | 180ms | nudges, icon swaps, chip pop |
+| `--dur-base` | 520ms | entrances, reveals, tab indicator |
+| `--dur-slow` | 760ms | the signature moment per screen |
+| `--ease-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | everything that arrives |
+| `--ease-standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | feedback |
+| `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | things that slide or resize |
+
+Utilities: `.enter` (mount rise and fade, staggered with `--i`), `.reveal` (scroll reveal via `data-in`), `.focus-in` (blur-in), `.deal` (name tags), `.sweepable` (marker sweep), `.chip-in`, `.grow-x` (bars), `.skeleton`, `.swap` (icon crossfade). Hooks live in `src/lib/motion.ts`: `useInView`, `useMounted`, `useScrollAway`. **No animation library**, just CSS plus about 80 lines of hooks.
+
+### Signature moments
+| Screen | Moment |
+|---|---|
+| Landing | Two name tags deal in and settle into their tilt, then the marker sweeps the evidence in reading order |
+| Intake | Interest chips pop in |
+| My Matches | Each card's evidence is highlighted as the card scrolls into view |
+| Admin: Matches | Pairs deal out after Generate, and each row's marks sweep as it lands |
+| Admin: Results | The headline number focuses in (blur to sharp) and the funnel bars grow |
+
+### Rules
+1. Animate `transform`, `opacity` and `filter` only. The one exception is the marker sweep, which uses `background-size`.
+2. Feedback finishes within 180ms and never blocks input.
+3. Entrances play once. The only loop is the loading skeleton.
+4. Lists animate only their first 8 rows. Later rows arrive already drawn and use `content-visibility: auto`, so a 40-pair list stays cheap.
+5. Entrances start at opacity 0.01, not 0, so the largest element still counts toward LCP from its first frame.
+6. With `prefers-reduced-motion: reduce`, everything renders in its final state. Marks are fully drawn and bars are full width. This is verified by script: no running animations and every mark drawn.
+7. Focus is a 3px light-cobalt ring with `:focus-visible`. Text contrast is at least 4.5:1, and input borders are at least 3:1.

@@ -11,7 +11,7 @@ It's an open-source take on [Bubble Lab](https://bubblelab.ai) (YC W26), rebuilt
 <table>
 <tr>
 <td width="34%"><img src="docs/img/attendee.png" alt="An attendee's match page on mobile"></td>
-<td><img src="docs/img/results.png" alt="Organizer results dashboard"><br><sub>Results use simulated feedback from the demo seed. Real numbers come from the <a href="docs/LIVE_TEST.md">live test</a>.</sub></td>
+<td><img src="docs/img/results.png" alt="Organizer results dashboard"><br><sub>Results use simulated feedback from the demo seed. Real numbers come from the <a href="docs/LIVE_TEST.md">live test</a>.</sub><br><img src="docs/redesign/sequences/c-generate.gif" alt="Pairs deal out after Generate, and each row's highlights sweep in"></td>
 </tr>
 </table>
 
@@ -28,6 +28,7 @@ Bubble Lab solves this for professional communities, but it starts at $99/mo beh
 | **Product** | [PRD](docs/PRD.md): problem, users, flows, success metrics, scope, non-goals |
 | **Engineering** | [Design doc](docs/DESIGN.md): architecture, data model, matching algorithm options and trade-offs |
 | **Evidence** | [Benchmark](docs/BENCHMARK.md): matching vs greedy and random baselines on data with known ground truth |
+| **Design** | [Visual + motion system](docs/DESIGN.md#9-visual--motion-system): dark UI, name tags as paper, highlighter sweeps; [how it was derived](docs/redesign/decisions.md) |
 | **Next** | [Live test plan](docs/LIVE_TEST.md) with hypotheses and pass criteria, [roadmap](docs/ROADMAP.md) |
 
 ## How it works
@@ -85,7 +86,7 @@ Full tables, ablation and caveats: [BENCHMARK.md](docs/BENCHMARK.md). Regenerate
 ## Tech stack
 
 **Backend:** Python 3.12, FastAPI, SQLModel (SQLite locally, Postgres via `DATABASE_URL`), scikit-learn, NetworkX, NumPy
-**Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, React Router
+**Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, React Router. Motion is CSS only, with no animation library.
 **Quality:** 119 backend tests (pytest), 12 frontend tests (Vitest + Testing Library), Ruff, strict TypeScript, GitHub Actions CI with a Docker smoke test
 
 ```
