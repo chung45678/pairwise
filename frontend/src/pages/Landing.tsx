@@ -6,7 +6,7 @@ import { NameTag } from "../components/NameTag";
 import { Brand, Button, Field, Input, Notice } from "../components/ui";
 import { stagger, useInView, useMounted, vars } from "../lib/motion";
 
-const REPO_URL = import.meta.env.VITE_REPO_URL as string | undefined;
+const REPO_URL = (import.meta.env.VITE_REPO_URL as string | undefined) ?? "https://github.com/chung45678/pairwise";
 
 /** Signature moment: two name tags deal onto the table, then the marker sweeps the evidence. */
 function HeroTags() {
