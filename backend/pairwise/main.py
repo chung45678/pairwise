@@ -69,6 +69,55 @@ def ensure_demo(engine: Engine, settings: Settings) -> None:
         seed(40, "", engine=engine, slug=settings.demo_slug, admin_key=settings.demo_admin_key)
 
 
+class SpaCacheHeaders:
+    """Caching rules for the built frontend.
+
+    Hashed files under /assets never change, so browsers can keep them forever.
+    The HTML must never be served stale: it names the current hashed files, and
+    on Vercel every file has the same mtime and index.html keeps the same size
+    between builds, so the default ETag (mtime + size) never changes. Browsers
+    then got "304 Not Modified" for a new deploy, kept the old HTML, and asked
+    for JavaScript that no longer exists: a black page. So HTML gets no
+    validators and is always sent fresh (it's under 1 KB).
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        path: str = scope["path"]
+        if path.startswith("/api/"):
+            return await self.app(scope, receive, send)
+        is_asset = path.startswith("/assets/")
+        if not is_asset:
+            scope = dict(scope)
+            scope["headers"] = [
+                (k, v)
+                for k, v in scope["headers"]
+                if k not in (b"if-none-match", b"if-modified-since")
+            ]
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                headers = [
+                    (k, v) for k, v in message.get("headers", []) if k.lower() != b"cache-control"
+                ]
+                ctype = next((v for k, v in headers if k.lower() == b"content-type"), b"")
+                if is_asset and message["status"] == 200:
+                    headers.append((b"cache-control", b"public, max-age=31536000, immutable"))
+                elif ctype.startswith(b"text/html"):
+                    headers = [
+                        (k, v) for k, v in headers if k.lower() not in (b"etag", b"last-modified")
+                    ]
+                    headers.append((b"cache-control", b"no-cache"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        return await self.app(scope, receive, send_with_headers)
+
+
 def _mount_spa(app: FastAPI, settings: Settings) -> None:
     """Serve the built React app. Client-side routes fall back to index.html.
 
@@ -79,6 +128,7 @@ def _mount_spa(app: FastAPI, settings: Settings) -> None:
     if not (static / "index.html").exists():
         logging.getLogger(__name__).info("No frontend build at %s; API only", static)
         return
+    app.add_middleware(SpaCacheHeaders)
     if hasattr(app, "frontend"):
         app.frontend("/", directory=static, fallback="index.html")
         return

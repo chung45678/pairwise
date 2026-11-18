@@ -141,3 +141,33 @@ def test_demo_links(tmp_path):
 
 def test_demo_links_when_disabled(client):
     assert client.get("/api/demo").json() == {"enabled": False}
+
+
+def test_html_is_never_served_stale(tmp_path):
+    """Regression: a redeploy left browsers on old HTML pointing at deleted JS."""
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text('<script src="/assets/app-v1.js"></script>')
+    (dist / "assets" / "app-v1.js").write_text("1")
+    app = create_app(Settings(database_url="sqlite://", static_dir=dist), make_engine("sqlite://"))
+    c = TestClient(app)
+    nav = {"Accept": "text/html"}
+
+    first = c.get("/", headers=nav)
+    assert first.headers["cache-control"] == "no-cache"
+    assert "etag" not in first.headers and "last-modified" not in first.headers
+
+    # Even if the browser sends validators from an old copy, it gets a full 200.
+    stale = c.get(
+        "/e/x/join",
+        headers={
+            **nav,
+            "If-None-Match": '"anything"',
+            "If-Modified-Since": "Sat, 20 Oct 2018 01:46:40 GMT",
+        },
+    )
+    assert stale.status_code == 200 and "app-v1.js" in stale.text
+
+    asset = c.get("/assets/app-v1.js")
+    assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"
+    assert c.get("/api/health").headers.get("cache-control") != "no-cache"
