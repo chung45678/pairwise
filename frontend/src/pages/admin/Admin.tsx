@@ -104,8 +104,12 @@ export function Admin() {
   const tabParam = new URLSearchParams(location.search).get("tab") as Tab | null;
   const [tab, setTabState] = useState<Tab>(tabParam ?? "guests");
   const [error, setError] = useState("");
+  // The panel only animates when the organizer switches tabs. On first load the
+  // content's own entrances do the work, and a whole-panel fade would double it.
+  const [switched, setSwitched] = useState(false);
 
   const setTab = (t: Tab) => {
+    setSwitched(true);
     setTabState(t);
     const url = new URL(window.location.href);
     url.searchParams.set("tab", t);
@@ -177,7 +181,7 @@ export function Admin() {
 
       <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
-      <div key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="enter pt-10" style={{ ["--rise" as string]: "var(--rise-sm)" }}>
+      <div key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className={`${switched ? "enter" : ""} pt-10`} style={{ ["--rise" as string]: "var(--rise-sm)" }}>
         {tab === "guests" && <Guests event={event} adminKey={key} attendees={attendees} reload={async () => void (await load())} />}
         {tab === "matches" && (
           <Matches

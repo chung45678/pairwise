@@ -1,5 +1,5 @@
 import { Download, RefreshCw, Send } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { api, type EventPublic, type MatchRow, type MatchStats } from "../../api";
 import { countMarks, Marked } from "../../components/Marked";
 import { Button, Notice } from "../../components/ui";
@@ -7,10 +7,12 @@ import { pct } from "../../lib/highlight";
 import { useMounted, vars } from "../../lib/motion";
 
 /** One pair. Rows deal in (first 8 staggered) and each row's highlights sweep as it lands. */
-function Pair({ m, index }: { m: MatchRow; index: number }) {
+const Pair = memo(function Pair({ m, index, swept }: { m: MatchRow; index: number; swept: boolean }) {
   const talked = m.feedback.filter((f) => f.outcome === "talked").length;
   const slot = Math.min(index, 8);
-  const swept = useMounted(40);
+  // Only the first screenful performs. Rows below the fold arrive already drawn,
+  // which keeps a 40-pair list from repainting 100+ marks at once.
+  const performs = index < 8;
   let n = 0;
   const offsets = m.reasons.map((r) => {
     const at = n;
@@ -19,7 +21,7 @@ function Pair({ m, index }: { m: MatchRow; index: number }) {
   });
   return (
     <li
-      className="enter grid grid-cols-[minmax(0,1fr)] gap-3 px-5 py-4 shadow-[0_1px_0_var(--color-line)] last:shadow-none md:grid-cols-[minmax(200px,0.8fr)_minmax(0,1.6fr)]"
+      className={`${performs ? "enter" : "[contain-intrinsic-size:auto_132px] [content-visibility:auto]"} grid grid-cols-[minmax(0,1fr)] gap-3 px-5 py-4 shadow-[0_1px_0_var(--color-line)] last:shadow-none md:grid-cols-[minmax(200px,0.8fr)_minmax(0,1.6fr)]`}
       style={vars({ "--i": slot, "--rise": "var(--rise-sm)" })}
     >
       <div>
@@ -36,7 +38,7 @@ function Pair({ m, index }: { m: MatchRow; index: number }) {
       </div>
       <div className="text-[15px]">
         <ul
-          className="sweepable flex flex-col gap-1"
+          className={performs ? "sweepable flex flex-col gap-1" : "flex flex-col gap-1"}
           style={vars({ "--sweep-delay": `${slot * 60 + 260}ms` })}
           {...(swept ? { "data-in": "" } : {})}
         >
@@ -54,7 +56,7 @@ function Pair({ m, index }: { m: MatchRow; index: number }) {
       </div>
     </li>
   );
-}
+});
 
 export function Matches({
   event,
@@ -113,6 +115,8 @@ export function Matches({
     });
 
   const people = new Set(matches.flatMap((m) => [m.a.id, m.b.id])).size;
+  // One timer for the whole list (not one per row) flips every row's sweep on.
+  const swept = useMounted(40, matches);
 
   if (matches.length === 0) {
     return (
@@ -181,7 +185,7 @@ export function Matches({
       {error && <div className="mt-4"><Notice tone="error">{error}</Notice></div>}
 
       <ul className="mt-6 rounded-[var(--radius-card)] bg-surface shadow-[var(--shadow-card)]">
-        {matches.map((m, i) => <Pair key={m.id} m={m} index={i} />)}
+        {matches.map((m, i) => <Pair key={m.id} m={m} index={i} swept={swept} />)}
       </ul>
     </div>
   );

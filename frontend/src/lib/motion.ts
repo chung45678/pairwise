@@ -40,17 +40,21 @@ export function useInView<T extends Element>(options: { rootMargin?: string; thr
   return { ref, inView, attrs: inView ? { "data-in": "" } : {} };
 }
 
-/** True after the first paint: lets a mount-time sweep start from empty. */
-export function useMounted(delayMs = 0) {
+/**
+ * True shortly after the first paint, so a mount-time sweep starts from empty.
+ * Pass `replayKey` to run it again when that value changes (e.g. a new list).
+ */
+export function useMounted(delayMs = 0, replayKey?: unknown) {
   const [on, setOn] = useState(false);
   useEffect(() => {
     if (prefersReducedMotion()) {
       setOn(true);
       return;
     }
+    setOn(false);
     const id = window.setTimeout(() => setOn(true), Math.max(16, delayMs));
     return () => window.clearTimeout(id);
-  }, [delayMs]);
+  }, [delayMs, replayKey]);
   return on;
 }
 

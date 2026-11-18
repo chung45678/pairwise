@@ -22,9 +22,10 @@ export function NameTag({
   footer?: ReactNode;
   className?: string;
   style?: CSSProperties;
-  headingLevel?: 2 | 3;
+  /** "p" when the tag is decorative (landing hero) and shouldn't join the outline. */
+  headingLevel?: 2 | 3 | "p";
 } & Record<`data-${string}`, string>) {
-  const Heading = headingLevel === 2 ? "h2" : "h3";
+  const Heading = headingLevel === "p" ? "p" : headingLevel === 2 ? "h2" : "h3";
   return (
     <article
       {...rest}

@@ -17,7 +17,7 @@ function HeroTags() {
       <NameTag
         name="Jordan"
         subtitle="Designer, UW Blueprint"
-        headingLevel={3}
+        headingLevel="p"
         className="deal relative z-10"
         style={vars({ "--tilt": "-2deg", "--i": 0, "--delay": "240ms" })}
       >
@@ -35,7 +35,7 @@ function HeroTags() {
       <NameTag
         name="Maya"
         subtitle="Product Manager, UW PM"
-        headingLevel={3}
+        headingLevel="p"
         className="deal relative -mt-6 ml-10 sm:ml-16"
         style={vars({ "--tilt": "1.5deg", "--i": 1, "--delay": "240ms" })}
       >

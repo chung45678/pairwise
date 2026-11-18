@@ -112,7 +112,7 @@ export function PageShell({ children, wide = false, right }: { children: ReactNo
   return (
     <div className="min-h-dvh">
       <header
-        className="site-header sticky top-0 z-30 bg-paper/80 shadow-[0_1px_0_var(--color-line)] backdrop-blur-md"
+        className="site-header sticky top-0 z-30 bg-paper/95 shadow-[0_1px_0_var(--color-line)]"
         {...(away ? { "data-away": "" } : {})}
       >
         <div className={`mx-auto flex h-14 items-center justify-between px-5 ${wide ? "max-w-6xl" : "max-w-3xl"}`}>
