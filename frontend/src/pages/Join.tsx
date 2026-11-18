@@ -4,6 +4,7 @@ import { api, ApiError, type EventPublic, type IntakeBody } from "../api";
 import { TagInput } from "../components/TagInput";
 import { Button, Field, Input, Loading, Notice, PageShell, Textarea } from "../components/ui";
 import { formatDate } from "../lib/highlight";
+import { stagger } from "../lib/motion";
 
 const EMPTY: IntakeBody = {
   name: "",
@@ -49,21 +50,21 @@ export function Join() {
   };
 
   if (loadError) return <PageShell><Notice tone="error">{loadError}</Notice></PageShell>;
-  if (!event) return <PageShell><Loading /></PageShell>;
+  if (!event) return <PageShell><Loading lines={2} /></PageShell>;
 
   return (
     <PageShell>
       <div className="max-w-xl">
-        <p className="text-[15px] text-muted">
+        <p className="enter text-[14px] text-muted" style={stagger(0)}>
           {[formatDate(event.starts_at), event.location].filter(Boolean).join(", ")}
         </p>
-        <h1 className="mt-1 text-[36px] sm:text-[44px]">{event.name}</h1>
-        <p className="mt-3 text-[17px] text-muted">
+        <h1 className="enter mt-2 text-[32px] sm:text-[40px]" style={stagger(1)}>{event.name}</h1>
+        <p className="enter mt-4 text-[17px] text-muted" style={stagger(2)}>
           Tell us a little about yourself and we'll suggest {event.matches_per_person}{" "}
           {event.matches_per_person === 1 ? "person" : "people"} worth finding at the event. Takes about a minute.
         </p>
 
-        <form onSubmit={submit} className="mt-8 flex flex-col gap-5" noValidate>
+        <form onSubmit={submit} className="enter mt-10 flex flex-col gap-6" style={stagger(3)} noValidate>
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Your name">
               {(id) => <Input id={id} required autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} />}
@@ -91,8 +92,8 @@ export function Join() {
 
           {error && <Notice tone="error">{error}</Notice>}
           <div className="flex flex-wrap items-center gap-4">
-            <Button type="submit" busy={busy}>Save and get my link</Button>
-            <p className="text-sm text-muted">Your matches see your name, role, club and interests. Never your email.</p>
+            <Button type="submit" busy={busy} arrow>Save and get my link</Button>
+            <p className="text-[13px] text-muted">Your matches see your name, role, club and interests. Never your email.</p>
           </div>
         </form>
       </div>

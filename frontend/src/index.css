@@ -2,31 +2,85 @@
 @import "@fontsource-variable/bricolage-grotesque";
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource/ibm-plex-sans/600.css";
 
 /*
-  Pairwise visual language: event name tags and a highlighter.
-  Cobalt is the name-tag band. Yellow marker = "this is why you match"
-  (complementary evidence). Mint marker = something you both share.
-  Everything else stays quiet so the tags and the marks carry the page.
+  Pairwise visual language: event name tags and a highlighter, on black.
+
+  The interface is dark and quiet. Name tags are the only "paper" objects in
+  it: a cobalt band (who) on a white body (why). Yellow marker = this is why
+  you match. Mint marker = something you both share. Everything else stays
+  neutral so the tags and the marks carry the page.
+
+  See docs/redesign/motion-spec.md for where each value comes from.
 */
 @theme {
-  --color-paper: #f4f6fa;
-  --color-surface: #ffffff;
-  --color-ink: #161b2e;
-  --color-muted: #5a6278;
-  --color-line: #d9dee8;
+  /* Dark UI */
+  --color-paper: #000000;
+  --color-surface: #0f1012;
+  --color-raised: #18191c;
+  --color-ink: #f4f4f5;
+  --color-muted: #9b9da4;
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-field: #5c5f67; /* input borders: 3:1 against black */
+  --color-link: #93a8ff;
+
+  /* Signature */
   --color-tag: #2442c9;
   --color-tag-dark: #1a3299;
   --color-marker: #ffe14d;
   --color-mint: #b6f2d3;
-  --color-danger: #c42b3a;
-  --color-ok: #127a4a;
+  --color-bar: #5470ff;
+
+  /* Status */
+  --color-danger: #ff7a7a;
+  --color-ok: #4ad391;
 
   --font-display: "Bricolage Grotesque Variable", "Segoe UI", system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
 
   --radius-tag: 14px;
+  --radius-card: 12px;
+  --radius-control: 10px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  /* Motion tokens */
+  --dur-instant: 80ms;
+  --dur-quick: 180ms;
+  --dur-base: 520ms;
+  --dur-slow: 760ms;
+  --rise-sm: 6px;
+  --rise-md: 12px;
+  --rise-lg: 24px;
+  --blur-in: 8px;
+  --stagger: 60ms;
+
+  --shadow-card: 0 0 0 1px var(--color-line), 0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 32px -16px rgb(0 0 0 / 0.8);
+  --shadow-tag: 0 0 0 1px rgb(255 255 255 / 0.06), 0 2px 4px rgb(0 0 0 / 0.3),
+    0 24px 48px -24px rgb(36 66 201 / 0.55);
+
+  color-scheme: dark;
+}
+
+/* Name tags are paper objects: inside them the light palette applies. */
+.on-paper {
+  --color-ink: #14161b;
+  --color-muted: #5d626e;
+  --color-surface: #ffffff;
+  --color-raised: #f3f4f6;
+  --color-paper: #f3f4f6;
+  --color-line: rgb(20 22 27 / 0.1);
+  --color-field: #8a8e98;
+  --color-link: #2442c9;
+  --color-ok: #127a4a;
+  --color-danger: #c42b3a;
+  color-scheme: light;
+  color: var(--color-ink);
 }
 
 html {
@@ -39,54 +93,239 @@ html {
 body {
   margin: 0;
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
-h1,
-h2,
-h3 {
+/* Type: one display moment per screen, everything else in two Plex weights. */
+h1 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-weight: 700;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-variation-settings: "opsz" 96;
+}
+h2,
+h3,
+h4 {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
   font-variation-settings: "opsz" 96;
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-tag);
+  outline: 3px solid var(--color-link);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* The highlighter stroke: slightly uneven, like a real marker. */
+::selection {
+  background: var(--color-marker);
+  color: #14161b;
+}
+
+/* ── The highlighter ─────────────────────────────────────────────────────── */
+
+/* Slightly uneven, like a real marker. Text on a mark is always dark ink. */
 mark.marker,
 mark.mint {
-  color: inherit;
+  color: #14161b;
   padding: 0 0.15em;
   margin: 0 -0.05em;
   border-radius: 0.2em 0.35em 0.25em 0.4em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+  background-color: transparent; /* drop the UA's yellow <mark> fill: the gradient is the marker */
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 mark.marker {
-  background: linear-gradient(100deg, #ffe14dcc 0%, var(--color-marker) 12%, #ffe14de6 88%, #ffe14d99 100%);
+  background-image: linear-gradient(100deg, #ffe14dcc 0%, var(--color-marker) 12%, #ffe14de6 88%, #ffe14d99 100%);
 }
 mark.mint {
-  background: linear-gradient(100deg, #b6f2d3cc 0%, var(--color-mint) 12%, #b6f2d3e6 88%, #b6f2d399 100%);
+  background-image: linear-gradient(100deg, #b6f2d3cc 0%, var(--color-mint) 12%, #b6f2d3e6 88%, #b6f2d399 100%);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* The one orchestrated moment: the marker sweeps across the hero's evidence words. */
-  .sweep mark.marker,
-  .sweep mark.mint {
-    background-size: 0% 100%;
-    background-repeat: no-repeat;
-    animation: sweep 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+/*
+  Sweep: marks inside a .sweepable start empty and are drawn left to right,
+  one after another, once the container gets data-in.
+*/
+.sweepable mark {
+  background-size: 0% 100%;
+  color: inherit;
+  transition:
+    background-size var(--dur-slow) var(--ease-out),
+    color var(--dur-quick) var(--ease-standard);
+  transition-delay: calc(var(--sweep-delay, 0ms) + var(--mi, 0) * 140ms);
+}
+.sweepable[data-in] mark {
+  background-size: 100% 100%;
+  color: #14161b;
+}
+
+/* ── Entrances ───────────────────────────────────────────────────────────── */
+
+/* Mount entrance: rise + fade, staggered with --i. */
+.enter {
+  animation: enter var(--dur-base) var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + min(var(--i, 0), 8) * var(--stagger));
+}
+/* Entrances start at 0.01, not 0: invisible to people, but still a paint, so the
+   page's largest element counts for LCP from its first frame. */
+@keyframes enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(var(--rise, var(--rise-md)));
   }
-  .sweep mark:nth-of-type(2) { animation-delay: 350ms; }
-  .sweep mark:nth-of-type(3) { animation-delay: 700ms; }
-  @keyframes sweep {
-    to { background-size: 100% 100%; }
+}
+
+/* Focus pull: the one blur-in per screen. */
+.focus-in {
+  animation: focus-in var(--dur-slow) var(--ease-out) both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes focus-in {
+  from {
+    opacity: 0.01;
+    filter: blur(var(--blur-in));
+    transform: translateY(var(--rise-md));
+  }
+}
+
+/* Scroll reveal: hidden until the observer sets data-in. */
+.reveal {
+  opacity: 0;
+  transform: translateY(var(--rise, var(--rise-md)));
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+  transition-delay: var(--delay, 0ms);
+}
+.reveal[data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Landing: name tags deal onto the table and settle into their tilt. */
+.deal {
+  transform: rotate(var(--tilt, 0deg));
+  animation: deal var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + var(--i, 0) * 140ms);
+}
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--rise-lg) * -1)) rotate(calc(var(--tilt, 0deg) * -2));
+  }
+  to {
+    opacity: 1;
+    transform: rotate(var(--tilt, 0deg));
+  }
+}
+
+/* Chips pop in from the input. */
+.chip-in {
+  animation: chip-in var(--dur-quick) var(--ease-out) both;
+}
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-sm)) scale(0.92);
+  }
+}
+
+/* Data bars grow from their baseline. */
+.grow-x {
+  transform-origin: left center;
+  animation: grow-x var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--delay, 0ms) + var(--i, 0) * 80ms);
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Loading skeleton: a shimmer is the only loop, and only while waiting. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border-radius: 8px;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Icon swap (copy → check): blur crossfade. */
+.swap {
+  display: inline-grid;
+}
+.swap > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--dur-quick) var(--ease-standard),
+    filter var(--dur-quick) var(--ease-standard),
+    transform var(--dur-quick) var(--ease-standard);
+}
+.swap > [data-off] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: scale(0.8);
+}
+
+/* Header: hides on scroll down, returns on scroll up. */
+.site-header {
+  transition: transform var(--dur-base) cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-header[data-away] {
+  transform: translateY(-100%);
+  transition: transform 340ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* ── Reduced motion: every entrance renders its final state ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .enter,
+  .focus-in,
+  .deal,
+  .chip-in,
+  .grow-x {
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .sweepable mark {
+    background-size: 100% 100% !important;
+    color: #14161b !important;
+    transition: none !important;
+  }
+  .skeleton::after {
+    animation: none;
+  }
+  .site-header,
+  .site-header[data-away],
+  .swap > * {
+    transition-duration: 0.01ms !important;
   }
 }
 

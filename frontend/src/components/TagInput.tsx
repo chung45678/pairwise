@@ -54,14 +54,14 @@ export function TagInput({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-2 focus-within:border-tag focus-within:ring-3 focus-within:ring-tag/15">
+      <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-[var(--radius-control)] border border-field/70 bg-surface px-2.5 py-2 transition-colors duration-[var(--dur-instant)] hover:border-field focus-within:border-link focus-within:ring-3 focus-within:ring-link/20">
         {value.map((t) => (
-          <span key={t} className="inline-flex items-center gap-1 rounded-md bg-mint px-2 py-1 text-[15px]">
+          <span key={t} className="chip-in inline-flex items-center gap-1 rounded-lg bg-mint px-2 py-1 text-[14px] text-[#14161b]">
             {t}
             <button
               type="button"
               onClick={() => onChange(value.filter((v) => v !== t))}
-              className="rounded p-0.5 hover:bg-ink/10"
+              className="rounded p-0.5 transition-colors duration-[var(--dur-instant)] hover:bg-black/10"
               aria-label={`Remove ${t}`}
             >
               <X aria-hidden className="size-3.5" />
@@ -87,7 +87,7 @@ export function TagInput({
               key={s}
               type="button"
               onClick={() => add(s)}
-              className="rounded-md border border-dashed border-line px-2 py-1 text-sm text-muted hover:border-tag hover:text-tag"
+              className="rounded-lg px-2 py-1 text-[13px] text-muted shadow-[0_0_0_1px_var(--color-line)] transition-colors duration-[var(--dur-instant)] hover:bg-ink/6 hover:text-ink"
             >
               + {s}
             </button>

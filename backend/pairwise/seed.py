@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import secrets
 from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session
@@ -28,7 +29,9 @@ def seed(n: int, base_url: str, with_feedback: bool = True) -> dict:
 
     with Session(engine) as s:
         event = Event(
-            slug=f"demo-mixer-{rng.randrange(16**4):04x}",
+            # Random suffix: the seeded rng would give the same slug every run,
+            # so running `make seed` twice used to crash on the unique slug.
+            slug=f"demo-mixer-{secrets.token_hex(3)}",
             name="PM x Blueprint Winter Mixer",
             description="Meet the people building things at Waterloo. Pairwise will "
             "suggest two people worth meeting.",
