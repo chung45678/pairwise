@@ -43,19 +43,19 @@ export function useInView<T extends Element>(options: { rootMargin?: string; thr
 /**
  * True shortly after the first paint, so a mount-time sweep starts from empty.
  * Pass `replayKey` to run it again when that value changes (e.g. a new list).
+ * The key check is synchronous, so new content never mounts already "on".
  */
 export function useMounted(delayMs = 0, replayKey?: unknown) {
-  const [on, setOn] = useState(false);
+  const [onFor, setOnFor] = useState<{ key: unknown } | null>(null);
   useEffect(() => {
     if (prefersReducedMotion()) {
-      setOn(true);
+      setOnFor({ key: replayKey });
       return;
     }
-    setOn(false);
-    const id = window.setTimeout(() => setOn(true), Math.max(16, delayMs));
+    const id = window.setTimeout(() => setOnFor({ key: replayKey }), Math.max(16, delayMs));
     return () => window.clearTimeout(id);
   }, [delayMs, replayKey]);
-  return on;
+  return onFor !== null && onFor.key === replayKey;
 }
 
 /** Header hide-on-scroll: away when scrolling down past `offset`, back on any upward scroll. */

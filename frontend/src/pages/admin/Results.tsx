@@ -67,7 +67,7 @@ export function Results({ event, adminKey }: { event: EventPublic; adminKey: str
       <section className="grid gap-8 md:grid-cols-[1.2fr_1fr]">
         <div>
           <p className="text-[16px] font-medium">Conversations that happened</p>
-          <p className="focus-in display mt-2 text-[64px] sm:text-[80px]" style={vars({ "--delay": "120ms" })}>{pct(m.conversation_rate)}</p>
+          <p className="focus-in display mt-2 text-[64px] sm:text-[80px]">{pct(m.conversation_rate)}</p>
           <p className="mt-3 max-w-[52ch] text-[14px] text-muted">
             Of the {m.matches_with_feedback} matches where someone answered, at least one person said they talked.
             Counting every match, including ones with no answer, the floor is {pct(m.conversation_rate_all)}.

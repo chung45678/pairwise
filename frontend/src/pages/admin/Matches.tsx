@@ -74,6 +74,9 @@ export function Matches({
   const [busy, setBusy] = useState<"" | "generate" | "publish" | "export">("");
   const [stats, setStats] = useState<MatchStats | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // Bumped on every (re)generate so rows remount and perform again, even when
+  // the database hands back the same ids.
+  const [generation, setGeneration] = useState(0);
   const [error, setError] = useState("");
   const published = event.status === "published";
 
@@ -93,6 +96,7 @@ export function Matches({
     run("generate", async () => {
       const res = await api.admin.generate(event.slug, adminKey);
       setStats(res.stats);
+      setGeneration((g) => g + 1);
       onChange({ matches: res.matches, event: { ...event, status: "matched" } });
     });
 
@@ -185,7 +189,7 @@ export function Matches({
       {error && <div className="mt-4"><Notice tone="error">{error}</Notice></div>}
 
       <ul className="mt-6 rounded-[var(--radius-card)] bg-surface shadow-[var(--shadow-card)]">
-        {matches.map((m, i) => <Pair key={m.id} m={m} index={i} swept={swept} />)}
+        {matches.map((m, i) => <Pair key={`${generation}-${m.id}`} m={m} index={i} swept={swept} />)}
       </ul>
     </div>
   );

@@ -142,6 +142,7 @@ mark.mint {
   border-radius: 0.2em 0.35em 0.25em 0.4em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+  background-color: transparent; /* drop the UA's yellow <mark> fill: the gradient is the marker */
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
