@@ -130,6 +130,8 @@ docker build -t pairwise .
 docker run -p 8000:8000 -v pairwise-data:/data pairwise
 ```
 
+**Vercel** (how the live site runs): `vercel.json` builds the React app, and the root `app.py` exposes the FastAPI app as one Python function that also serves the frontend. Connect a Postgres database from the Vercel Marketplace (Neon, free tier), which sets `DATABASE_URL`. A seeded, read-only demo event is created at `/e/demo` on first start.
+
 **Optional settings** (see [`.env.example`](.env.example)): `ANTHROPIC_API_KEY` for LLM icebreakers, `EMBEDDINGS_URL` for embedding-based scoring, `DATABASE_URL` for Postgres.
 
 ## What's next

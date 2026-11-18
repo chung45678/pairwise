@@ -1,0 +1,15 @@
+# Deployment manifest for Vercel only. For development, use backend/pyproject.toml
+# (`make setup`). Keep these in sync with backend/pyproject.toml's dependencies.
+[project]
+name = "pairwise-deploy"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.160",
+  "sqlmodel>=0.0.22",
+  "python-multipart>=0.0.9",
+  "numpy>=1.26",
+  "networkx>=3.3",
+  "httpx>=0.27",
+  "psycopg[binary]>=3.2",
+]

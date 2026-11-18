@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 
 from fastapi import FastAPI, HTTPException
@@ -43,17 +44,44 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     def health():
         return {"ok": True, "version": __version__}
 
+    if settings.demo_enabled:
+        ensure_demo(engine, settings)
     _mount_spa(app, settings)
     return app
 
 
+def ensure_demo(engine: Engine, settings: Settings) -> None:
+    """Seed the public read-only demo event once. Safe to call on every cold start,
+    including two instances starting at the same time."""
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select
+
+    from pairwise.models import Event
+    from pairwise.seed import seed
+
+    with Session(engine) as s:
+        if s.exec(select(Event.id).where(Event.slug == settings.demo_slug)).first():
+            return
+    # If another instance seeded it first, the unique slug stops the duplicate.
+    with contextlib.suppress(IntegrityError):
+        seed(40, "", engine=engine, slug=settings.demo_slug, admin_key=settings.demo_admin_key)
+
+
 def _mount_spa(app: FastAPI, settings: Settings) -> None:
-    """Serve the built React app, falling back to index.html for client-side routes."""
+    """Serve the built React app. Client-side routes fall back to index.html.
+
+    FastAPI's `app.frontend()` registers the build as low-priority routes (every
+    API route wins), and Vercel promotes it to its CDN at build time.
+    """
     static = settings.static_dir
-    index = static / "index.html"
-    if not index.exists():
+    if not (static / "index.html").exists():
         logging.getLogger(__name__).info("No frontend build at %s; API only", static)
         return
+    if hasattr(app, "frontend"):
+        app.frontend("/", directory=static, fallback="index.html")
+        return
+
+    # Older FastAPI: mount assets and add a catch-all.
     if (static / "assets").exists():
         app.mount("/assets", StaticFiles(directory=static / "assets"), name="assets")
 
@@ -64,4 +92,4 @@ def _mount_spa(app: FastAPI, settings: Settings) -> None:
         candidate = (static / path).resolve()
         if path and candidate.is_file() and static.resolve() in candidate.parents:
             return FileResponse(candidate)
-        return FileResponse(index)
+        return FileResponse(static / "index.html")

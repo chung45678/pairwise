@@ -15,7 +15,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
 WORKDIR /app
 COPY backend/pyproject.toml ./
 COPY backend/pairwise ./pairwise
-RUN pip install --no-cache-dir ".[postgres]" && mkdir -p /data
+RUN pip install --no-cache-dir . && mkdir -p /data
 COPY --from=web /web/dist ./static
 RUN useradd --create-home app && chown -R app /data
 USER app

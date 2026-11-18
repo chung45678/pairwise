@@ -11,6 +11,16 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PAIRWISE_TEST_POSTGRES: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -51,16 +61,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pip install ./backend
+      - run: pip install ./backend uvicorn
       - run: cd frontend && npm ci && npm run build
-      - name: Start app
+      - name: Start app through the Vercel entrypoint (app.py)
         run: |
-          DATABASE_URL=sqlite:////tmp/e2e.db PAIRWISE_STATIC_DIR=$PWD/frontend/dist \
-            uvicorn pairwise.main:create_app --factory --port 8000 &
+          DATABASE_URL=sqlite:////tmp/e2e.db PAIRWISE_DEMO=1 uvicorn app:app --port 8000 &
           for i in $(seq 1 20); do curl -fs localhost:8000/api/health && break; sleep 1; done
       - run: cd frontend && npm run e2e
         env:
           CHROME_PATH: /usr/bin/google-chrome
+      - name: Public demo is seeded and read-only
+        run: |
+          curl -fs localhost:8000/api/demo | grep -q '"enabled":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X PATCH -H 'X-Admin-Key: try-the-demo' \
+            -H 'Content-Type: application/json' -d '{"name":"x"}' localhost:8000/api/admin/events/demo)" = 403
 
   docker:
     runs-on: ubuntu-latest

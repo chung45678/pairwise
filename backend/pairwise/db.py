@@ -10,7 +10,17 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 
+def normalize_url(url: str) -> str:
+    """Hosted Postgres hands out postgres:// or postgresql:// URLs; SQLAlchemy needs
+    the driver named explicitly (we ship psycopg 3)."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix) :]
+    return url
+
+
 def make_engine(url: str) -> Engine:
+    url = normalize_url(url)
     if url.startswith("sqlite"):
         kwargs: dict = {"connect_args": {"check_same_thread": False}}
         if url in ("sqlite://", "sqlite:///:memory:"):
@@ -22,7 +32,8 @@ def make_engine(url: str) -> Engine:
             dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
         return engine
-    return create_engine(url, pool_pre_ping=True)
+    # Serverless: many short-lived instances, so keep each one's pool tiny.
+    return create_engine(url, pool_pre_ping=True, pool_size=2, max_overflow=2, pool_recycle=300)
 
 
 def init_db(engine: Engine) -> None:
