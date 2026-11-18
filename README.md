@@ -2,6 +2,8 @@
 
 **Tell everyone at your event who to meet, and why.**
 
+**Live: [pairwise-five-lake.vercel.app](https://pairwise-five-lake.vercel.app)**. [Organizer demo](https://pairwise-five-lake.vercel.app/demo) (read-only, 40 simulated guests), [a guest's matches](https://pairwise-five-lake.vercel.app/demo/guest), or [create your own event](https://pairwise-five-lake.vercel.app).
+
 Pairwise is an open-source matchmaker for student club events. Guests answer a 60-second form. Pairwise gives each of them two or three people to find, the exact words that connected them, and an opener. After the event, guests tap whether they talked, and the organizer sees how many conversations actually happened.
 
 It's an open-source take on [Bubble Lab](https://bubblelab.ai) (YC W26), rebuilt for clubs with no budget: no sales demo, no paid tier, no LinkedIn scraping.

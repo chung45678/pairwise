@@ -1,13 +1,30 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { api } from "./api";
 import "./index.css";
-import { PageShell } from "./components/ui";
+import { Loading, PageShell } from "./components/ui";
 import { stagger } from "./lib/motion";
 import { Admin } from "./pages/admin/Admin";
 import { Join } from "./pages/Join";
 import { Landing } from "./pages/Landing";
 import { MyMatches } from "./pages/MyMatches";
+
+/** Stable links for the README: /demo and /demo/guest resolve to the live demo. */
+function DemoRedirect({ to }: { to: "admin" | "guest" }) {
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    api
+      .demo()
+      .then((d) => {
+        const target = d.enabled ? d[to] : null;
+        if (target) window.location.replace(target);
+        else setMissing(true);
+      })
+      .catch(() => setMissing(true));
+  }, [to]);
+  return missing ? <NotFound /> : <PageShell><Loading label="Opening the demo" lines={1} /></PageShell>;
+}
 
 function NotFound() {
   return (
@@ -30,6 +47,8 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/demo" element={<DemoRedirect to="admin" />} />
+        <Route path="/demo/guest" element={<DemoRedirect to="guest" />} />
         <Route path="/e/:slug/admin" element={<Admin />} />
         <Route path="/e/:slug/join" element={<Join />} />
         <Route path="/m/:token" element={<MyMatches />} />

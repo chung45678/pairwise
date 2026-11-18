@@ -42,7 +42,9 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
 
     @app.get("/api/health", tags=["meta"])
     def health():
-        return {"ok": True, "version": __version__}
+        # Which database is live: "sqlite" on Vercel means Postgres isn't connected
+        # yet and data only lasts until the instance restarts.
+        return {"ok": True, "version": __version__, "database": engine.dialect.name}
 
     if settings.demo_enabled:
         ensure_demo(engine, settings)
